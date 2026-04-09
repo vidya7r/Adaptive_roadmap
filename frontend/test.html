@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Diagnostic Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .log { background: white; padding: 10px; margin: 10px 0; border-left: 4px solid #667eea; }
+        .error { border-left-color: #ff0000; color: #ff0000; }
+        .success { border-left-color: #00aa00; color: #00aa00; }
+        h1 { color: #667eea; }
+    </style>
+</head>
+<body>
+    <h1>NDA Platform - Diagnostic Test</h1>
+    <div id="logs"></div>
+
+    <script>
+        const logs = document.getElementById('logs');
+
+        function log(msg, type = 'info') {
+            console.log(msg);
+            const div = document.createElement('div');
+            div.className = 'log ' + type;
+            div.textContent = msg;
+            logs.appendChild(div);
+        }
+
+        // Test 1: Check if JavaScript is running
+        log('✓ JavaScript is running!', 'success');
+
+        // Test 2: Check if localStorage works
+        try {
+            localStorage.setItem('test', 'works');
+            localStorage.removeItem('test');
+            log('✓ localStorage works', 'success');
+        } catch (e) {
+            log('✗ localStorage error: ' + e.message, 'error');
+        }
+
+        // Test 3: Check if we can fetch from API
+        log('Testing API connection to http://127.0.0.1:8001...', 'info');
+        fetch('http://127.0.0.1:8001/api/modules', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => {
+            if (r.ok) {
+                log('✓ Backend API is responding!', 'success');
+            } else {
+                log('✗ Backend returned status: ' + r.status, 'error');
+            }
+            return r.json();
+        })
+        .then(data => {
+            log('✓ Got data: ' + JSON.stringify(data).substring(0, 100) + '...', 'success');
+        })
+        .catch(err => {
+            log('✗ API connection failed: ' + err.message, 'error');
+            log('    Make sure backend is running on 127.0.0.1:8001', 'error');
+        });
+
+        // Test 4: Try to load app.js
+        setTimeout(() => {
+            if (typeof state !== 'undefined') {
+                log('✓ app.js loaded successfully', 'success');
+                log('  Current page: ' + state.currentPage, 'info');
+                log('  Token: ' + (state.token ? 'exists' : 'not set'), 'info');
+            } else {
+                log('✗ app.js did not load - state is undefined', 'error');
+            }
+        }, 500);
+
+        // Test 5: Try to load api.js
+        setTimeout(() => {
+            if (typeof api !== 'undefined') {
+                log('✓ api.js loaded successfully', 'success');
+            } else {
+                log('✗ api.js did not load - api is undefined', 'error');
+            }
+        }, 500);
+
+        log('', 'info');
+        log('If you see errors above, try:', 'info');
+        log('1. Make sure backend is running: python -m uvicorn app.main:app --host 127.0.0.1 --port 8001', 'info');
+        log('2. Refresh this page after starting backend', 'info');
+        log('3. Check firewall settings', 'info');
+    </script>
+</body>
+</html>

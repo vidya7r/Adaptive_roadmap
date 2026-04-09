@@ -1,0 +1,13 @@
+{
+  "name": "nda-prep-frontend",
+  "version": "1.0.0",
+  "description": "NDA Preparation Platform Frontend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["nda", "exam", "preparation"],
+  "author": "",
+  "license": "ISC"
+}
