@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.database import SessionLocal
-from app import crud
-from app import models
-from app.dependencies import get_current_user
-from app.schemas import SubmitAnswers, SubmitSubtopicAnswers
+from ..database import SessionLocal
+from .. import crud
+from .. import models
+from ..dependencies import get_current_user
+from ..schemas import SubmitAnswers, SubmitSubtopicAnswers
 
 router = APIRouter(prefix="/test", tags=["Test"])
 

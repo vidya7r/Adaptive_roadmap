@@ -3,8 +3,8 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from app.database import SessionLocal
-from app import crud
+from .database import SessionLocal
+from . import crud
 
 SECRET_KEY = "vidya@123"
 ALGORITHM = "HS256"

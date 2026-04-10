@@ -1,0 +1,219 @@
+/* Exam Selection Page Styling */
+
+.exam-selection-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0B3C5D 0%, #328CC1 100%);
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.exam-selection-container.loading-state,
+.exam-selection-container.error-state {
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  color: white;
+  text-align: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: white;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.exam-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  position: relative;
+}
+
+.exam-header .back-btn {
+  position: absolute;
+  left: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.exam-header .back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(-4px);
+}
+
+.exam-header > div {
+  flex: 1;
+}
+
+.exam-header h1 {
+  font-size: 42px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.exam-header p {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.exam-card {
+  display: grid;
+  grid-template-columns: 100px 1fr 50px;
+  align-items: center;
+  gap: 30px;
+  padding: 40px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid #f0f0ff;
+}
+
+.exam-card:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+  border-color: #0B3C5D;
+}
+
+.exam-card:active {
+  transform: translateY(-8px) scale(1.01);
+}
+
+.exam-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #0B3C5D 0%, #328CC1 100%);
+  border-radius: 12px;
+  color: white;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.exam-card:hover .exam-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.exam-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exam-content h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1F2933;
+  margin: 0;
+}
+
+.exam-content p {
+  font-size: 14px;
+  color: #666666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.exam-arrow {
+  font-size: 36px;
+  color: #0B3C5D;
+  font-weight: 800;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.exam-card:hover .exam-arrow {
+  color: #328CC1;
+  transform: translateX(8px);
+}
+
+.retry-btn {
+  padding: 12px 30px;
+  background: white;
+  color: #0B3C5D;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.retry-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.error-state p {
+  font-size: 18px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .exam-selection-container {
+    padding: 40px 20px;
+  }
+
+  .exam-header h1 {
+    font-size: 28px;
+  }
+
+  .exam-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exam-card {
+    grid-template-columns: 80px 1fr 40px;
+    padding: 30px;
+    gap: 20px;
+  }
+
+  .exam-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  .exam-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .exam-content h2 {
+    font-size: 20px;
+  }
+}

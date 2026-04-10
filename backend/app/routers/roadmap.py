@@ -1,9 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import SessionLocal
-from app import crud, models
+from pydantic import BaseModel
+from ..database import SessionLocal
+from .. import crud, models
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/api", tags=["Content"])
+
+
+# Pydantic models for request validation
+class ProgressUpdate(BaseModel):
+    status: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {"status": "done"}
+        }
 
 
 def get_db():
@@ -26,11 +38,48 @@ MODULES = {
     8: {"id": 8, "title": "SSB Interview", "icon": "👥"},
 }
 
+# Sections mapping
+SECTIONS = {
+    1: {
+        "id": 1,
+        "title": "Written",
+        "description": "Written Examination - Mathematics, English, General Knowledge"
+    },
+    2: {
+        "id": 2,
+        "title": "SSB",
+        "description": "Service Selection Board - Interview & Assessment"
+    }
+}
+
+# Modules per section
+SECTION_MODULES = {
+    1: [1, 2, 3, 4, 5, 6, 7],  # Written exam modules
+    2: [8]  # SSB module
+}
+
+
+@router.get("/sections")
+def get_sections():
+    """Get all exam sections (Written, SSB)"""
+    return {
+        "sections": list(SECTIONS.values())
+    }
+
 
 @router.get("/modules")
-def get_modules():
-    """Get all 8 NDA modules"""
-    return list(MODULES.values())
+def get_modules(section_id: int = None):
+    """Get modules, optionally filtered by section"""
+    if section_id is None:
+        return list(MODULES.values())
+    
+    if section_id not in SECTION_MODULES:
+        raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
+    
+    module_ids = SECTION_MODULES[section_id]
+    return {
+        "modules": [MODULES[mid] for mid in module_ids if mid in MODULES]
+    }
 
 
 @router.get("/subtopics/all")
@@ -81,7 +130,7 @@ def get_all_topics(db: Session = Depends(get_db)):
 
 @router.get("/topics/{module_id}")
 def get_topics_by_module(module_id: int, db: Session = Depends(get_db)):
-    """Get topics for a specific module"""
+    """Get topics for a specific module with their subtopics"""
     try:
         topics = db.query(models.Topic).filter(
             models.Topic.module_id == module_id
@@ -95,6 +144,16 @@ def get_topics_by_module(module_id: int, db: Session = Depends(get_db)):
                 "id": t.id,
                 "title": t.title,
                 "module_id": t.module_id,
+                "subtopics": [
+                    {
+                        "id": st.id,
+                        "title": st.title,
+                        "description": st.description,
+                        "question_count": len(st.questions) if st.questions else 0,
+                        "is_completed": False,
+                    }
+                    for st in (t.subtopics if t.subtopics else [])
+                ]
             }
             for t in topics
         ]
@@ -302,3 +361,120 @@ def get_modules(db: Session = Depends(get_db)):
         })
     
     return list(modules_dict.values())
+
+
+@router.get("/subtopic/{subtopic_id}/progress")
+def get_subtopic_progress(
+    subtopic_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get subtopic progress for current user"""
+    try:
+        progress = db.query(models.UserSubtopicProgress).filter(
+            models.UserSubtopicProgress.user_id == current_user.id,
+            models.UserSubtopicProgress.subtopic_id == subtopic_id
+        ).first()
+        
+        if not progress:
+            return {
+                "status": "pending",
+                "completed": False
+            }
+        
+        return {
+            "status": progress.status,
+            "completed": progress.is_completed,
+            "score": progress.score,
+            "attempts": progress.attempts
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.post("/subtopic/{subtopic_id}/progress")
+def save_subtopic_progress(
+    subtopic_id: int,
+    progress_update: ProgressUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Save/update subtopic progress for current user"""
+    try:
+        # Validate status
+        valid_statuses = ['pending', 'done', 'in-progress', 'skip']
+        if progress_update.status not in valid_statuses:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        
+        # Check if progress record exists
+        progress = db.query(models.UserSubtopicProgress).filter(
+            models.UserSubtopicProgress.user_id == current_user.id,
+            models.UserSubtopicProgress.subtopic_id == subtopic_id
+        ).first()
+        
+        if not progress:
+            # Create new progress record
+            progress = models.UserSubtopicProgress(
+                user_id=current_user.id,
+                subtopic_id=subtopic_id,
+                status=progress_update.status,
+                is_completed=(progress_update.status == 'done')
+            )
+            db.add(progress)
+        else:
+            # Update existing progress record
+            progress.status = progress_update.status
+            progress.is_completed = (progress_update.status == 'done')
+        
+        db.commit()
+        db.refresh(progress)
+        
+        return {
+            "success": True,
+            "status": progress.status,
+            "completed": progress.is_completed
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.delete("/subtopic/{subtopic_id}/progress")
+def reset_subtopic_progress(
+    subtopic_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Reset subtopic progress for current user (set to pending)"""
+    try:
+        # Find progress record
+        progress = db.query(models.UserSubtopicProgress).filter(
+            models.UserSubtopicProgress.user_id == current_user.id,
+            models.UserSubtopicProgress.subtopic_id == subtopic_id
+        ).first()
+        
+        if not progress:
+            raise HTTPException(status_code=404, detail="Progress record not found")
+        
+        # Reset to pending status
+        progress.status = 'pending'
+        progress.is_completed = False
+        progress.score = 0
+        progress.accuracy = 0
+        progress.attempts = 0
+        
+        db.commit()
+        db.refresh(progress)
+        
+        return {
+            "success": True,
+            "status": progress.status,
+            "message": "Progress reset to pending"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

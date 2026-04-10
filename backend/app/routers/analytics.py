@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
-from app import models
-from app.dependencies import get_current_user
+from ..database import SessionLocal
+from .. import models
+from ..dependencies import get_current_user
 
 router = APIRouter(
     prefix="/analytics",
@@ -180,3 +180,171 @@ def get_topic_mastery(
         "in_progress_topics": in_progress_topics,
         "not_started_topics": not_started_topics
     }
+
+
+# --------------------------------------------------
+# 📊 COMPREHENSIVE ANALYTICS DASHBOARD
+# --------------------------------------------------
+
+@router.get("/overview")
+def get_analytics_overview(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Get overall user analytics summary"""
+    try:
+        # Get completed subtopics (tests taken)
+        completed_subtopics = db.query(
+            models.UserSubtopicProgress
+        ).filter(
+            models.UserSubtopicProgress.user_id == current_user.id,
+            models.UserSubtopicProgress.is_completed == True
+        ).all()
+        
+        total_tests = len(completed_subtopics)
+        
+        # Calculate average accuracy
+        avg_accuracy = 0
+        if completed_subtopics:
+            avg_accuracy = sum([p.accuracy or 0 for p in completed_subtopics]) / total_tests
+        
+        # Calculate total time spent
+        total_time_spent = sum([p.time_spent or 0 for p in completed_subtopics])
+        
+        # Get all answered questions count
+        total_questions_answered = sum([p.attempts for p in completed_subtopics])
+        
+        return {
+            "totalTests": total_tests,
+            "totalQuestionsAnswered": total_questions_answered,
+            "averageAccuracy": round(avg_accuracy, 1),
+            "averageScore": round(avg_accuracy, 1),
+            "totalTimeSpent": int(total_time_spent),
+            "streakDays": 5,  # Simplified for now
+        }
+    except Exception as e:
+        print(f"Error in get_analytics_overview: {e}")
+        return {
+            "totalTests": 0,
+            "totalQuestionsAnswered": 0,
+            "averageAccuracy": 0,
+            "averageScore": 0,
+            "totalTimeSpent": 0,
+            "streakDays": 0,
+        }
+
+
+@router.get("/topics-performance")
+def get_topics_performance(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Get performance for each topic the user has interacted with"""
+    try:
+        progress_list = db.query(
+            models.UserSubtopicProgress
+        ).filter(
+            models.UserSubtopicProgress.user_id == current_user.id
+        ).all()
+        
+        topics_performance = []
+        
+        for p in progress_list:
+            if p.subtopic_id:
+                subtopic = db.query(models.Subtopic).filter(
+                    models.Subtopic.id == p.subtopic_id
+                ).first()
+                
+                if subtopic and p.attempts > 0:
+                    accuracy = p.accuracy or 0
+                    
+                    # Determine status and color
+                    if accuracy >= 85:
+                        status = "Mastered"
+                        color = "#4CAF50"
+                    elif accuracy >= 70:
+                        status = "Good" if accuracy < 80 else "Excellent"
+                        color = "#66BB6A" if accuracy < 80 else "#4CAF50"
+                    elif accuracy >= 50:
+                        status = "Needs Work"
+                        color = "#FFC107"
+                    else:
+                        status = "Weak"
+                        color = "#F44336"
+                    
+                    topics_performance.append({
+                        "name": subtopic.name,
+                        "accuracy": round(accuracy, 1),
+                        "tests": p.attempts,
+                        "status": status,
+                        "color": color
+                    })
+        
+        # Sort by accuracy descending
+        topics_performance.sort(key=lambda x: x["accuracy"], reverse=True)
+        
+        return {"topicsMastery": topics_performance}
+    except Exception as e:
+        print(f"Error in get_topics_performance: {e}")
+        return {"topicsMastery": []}
+
+
+@router.get("/summary")
+def get_analytics_summary(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Get complete analytics dashboard data"""
+    try:
+        overview_data = get_analytics_overview(db=db, current_user=current_user)
+        topics_data = get_topics_performance(db=db, current_user=current_user)
+        
+        # Get recommendations
+        weak_subtopics = db.query(
+            models.UserSubtopicProgress
+        ).filter(
+            models.UserSubtopicProgress.user_id == current_user.id,
+            models.UserSubtopicProgress.accuracy < 70
+        ).order_by(
+            models.UserSubtopicProgress.accuracy.asc()
+        ).all()
+        
+        recommendations = []
+        
+        # Add weak topic recommendations
+        for p in weak_subtopics[:2]:
+            if p.subtopic_id:
+                subtopic = db.query(models.Subtopic).filter(
+                    models.Subtopic.id == p.subtopic_id
+                ).first()
+                if subtopic:
+                    recommendations.append(f"Focus on {subtopic.name} ({p.accuracy}% accuracy)")
+        
+        if len(topics_data["topicsMastery"]) > 0:
+            recommendations.append(f"Great work on {topics_data['topicsMastery'][0]['name']}! Keep it up!")
+        
+        recommendations.append("Complete more tests to unlock advanced features")
+        
+        # Generate mock timeline
+        progress_timeline = [
+            {"date": "2024-01-15", "score": 65, "accuracy": 65, "testType": "Practice"},
+            {"date": "2024-01-16", "score": 72, "accuracy": 72, "testType": "Adaptive"},
+            {"date": "2024-01-17", "score": 68, "accuracy": 68, "testType": "Practice"},
+            {"date": "2024-01-18", "score": 78, "accuracy": 78, "testType": "Adaptive"},
+            {"date": "2024-01-19", "score": 82, "accuracy": 82, "testType": "Practice"},
+        ]
+        
+        return {
+            "overallStats": overview_data,
+            "topicsMastery": topics_data["topicsMastery"],
+            "progressTimeline": progress_timeline,
+            "recommendations": recommendations[:4]
+        }
+    except Exception as e:
+        print(f"Error in get_analytics_summary: {e}")
+        return {
+            "overallStats": {},
+            "topicsMastery": [],
+            "progressTimeline": [],
+            "recommendations": []
+        }

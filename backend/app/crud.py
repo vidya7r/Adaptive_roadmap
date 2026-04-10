@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app import models
-from app.auth import hash_password
+from . import models
+from .auth import hash_password
 from sqlalchemy.sql import text
 import random
 from datetime import datetime
@@ -502,3 +502,73 @@ def end_chat_session(db: Session, session_id: int):
     except Exception as e:
         db.rollback()
         raise e
+
+
+# --------------------------------------------------
+# 📚 RESOURCE FUNCTIONS (Study Materials)
+# --------------------------------------------------
+
+def create_resource(db: Session, subtopic_id: int, title: str, resource_type: str,
+                    url: str = None, file_path: str = None, description: str = None,
+                    category: str = None, order: int = 0):
+    """Create a new resource/study material"""
+    resource = models.Resource(
+        subtopic_id=subtopic_id,
+        title=title,
+        resource_type=resource_type,
+        url=url,
+        file_path=file_path,
+        description=description,
+        category=category,
+        order=order
+    )
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)
+    return resource
+
+
+def get_resources_by_subtopic(db: Session, subtopic_id: int):
+    """Get all resources for a subtopic"""
+    return db.query(models.Resource).filter(
+        models.Resource.subtopic_id == subtopic_id,
+        models.Resource.is_active == True
+    ).order_by(models.Resource.order, models.Resource.created_at).all()
+
+
+def get_resource(db: Session, resource_id: int):
+    """Get a specific resource"""
+    return db.query(models.Resource).filter(models.Resource.id == resource_id).first()
+
+
+def update_resource(db: Session, resource_id: int, **kwargs):
+    """Update a resource"""
+    resource = db.query(models.Resource).filter(models.Resource.id == resource_id).first()
+    if resource:
+        for key, value in kwargs.items():
+            if hasattr(resource, key):
+                setattr(resource, key, value)
+        resource.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(resource)
+    return resource
+
+
+def delete_resource(db: Session, resource_id: int):
+    """Delete a resource"""
+    resource = db.query(models.Resource).filter(models.Resource.id == resource_id).first()
+    if resource:
+        db.delete(resource)
+        db.commit()
+        return True
+    return False
+
+
+def get_resources_by_topic(db: Session, topic_id: int):
+    """Get all resources for all subtopics of a topic"""
+    return db.query(models.Resource).join(
+        models.Subtopic, models.Resource.subtopic_id == models.Subtopic.id
+    ).filter(
+        models.Subtopic.topic_id == topic_id,
+        models.Resource.is_active == True
+    ).all()

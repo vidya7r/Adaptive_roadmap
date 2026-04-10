@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
-from app import crud
-from app.dependencies import get_current_user
+from ..database import SessionLocal
+from .. import crud
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/adaptive", tags=["Adaptive"])
 

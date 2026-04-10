@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Float, Text, TIMESTAMP, UniqueConstraint
 from sqlalchemy.orm import relationship
-from app.database import Base
+from .database import Base
 from datetime import datetime
 from sqlalchemy.sql import func
 
@@ -23,7 +23,7 @@ class User(Base):
 
 
 # --------------------------------------------------
-# 📚 TOPICS
+#  TOPICS
 # --------------------------------------------------
 
 class Topic(Base):
@@ -52,8 +52,8 @@ class Subtopic(Base):
 
     topic = relationship("Topic", back_populates="subtopics")
     questions = relationship("Question", back_populates="subtopic")
-
     progress = relationship("UserSubtopicProgress", back_populates="subtopic")
+    resources = relationship("Resource", back_populates="subtopic", cascade="all, delete-orphan")
 
 
 # --------------------------------------------------
@@ -111,6 +111,9 @@ class UserSubtopicProgress(Base):
     )
 
     is_completed = Column(Boolean, default=False)
+
+    # Status field: pending, done, in-progress, skip
+    status = Column(String, default='pending')
 
     # ✅ Add safe defaults
     score = Column(Float, default=0)
@@ -278,3 +281,45 @@ class ChatMessage(Base):
     
     # Relationship
     session = relationship("ChatSession", back_populates="messages")
+
+
+# --------------------------------------------------
+# 📚 RESOURCES (Study Materials)
+# --------------------------------------------------
+
+class Resource(Base):
+    __tablename__ = "resources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    subtopic_id = Column(
+        Integer,
+        ForeignKey("subtopics.id", ondelete="CASCADE"),
+        index=True
+    )
+    
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    
+    # Resource type: pdf, video, link, document
+    resource_type = Column(String(50), nullable=False, default="link")
+    
+    # URL for videos, PDFs, or external links
+    url = Column(Text, nullable=True)
+    
+    # File path if stored locally
+    file_path = Column(Text, nullable=True)
+    
+    # For organizing resources
+    category = Column(String(100), nullable=True)  # e.g., "Recommended", "Optional", "Practice"
+    
+    # Order of display
+    order = Column(Integer, default=0)
+    
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship
+    subtopic = relationship("Subtopic", back_populates="resources")

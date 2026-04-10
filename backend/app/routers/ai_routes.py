@@ -3,19 +3,20 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.services.explanation_generator import (
+from ..database import get_db
+from ..dependencies import get_current_user
+from ..services.explanation_generator import (
     generate_and_store_explanations
 )
-from app.services.ai_services import (
+from ..services.ai_services import (
     generate_mcq_questions, 
     simplify_explanation, 
     expand_explanation,
     tutor_answer_question,
-    generate_question_hint
+    generate_question_hint,
+    generate_dynamic_description
 )
-from app import crud, models
+from .. import crud, models
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -456,4 +457,106 @@ def get_question_hint(
         raise HTTPException(
             status_code=500,
             detail=f"Error generating hint: {str(e)}"
+        )
+
+
+# --------------------------------------------------
+# DYNAMIC DESCRIPTION GENERATOR (For Subtopic Panel)
+# --------------------------------------------------
+
+class DynamicDescriptionRequest(BaseModel):
+    """Request model for generating dynamic descriptions"""
+    title: str
+
+
+@router.post("/generate-description")
+def generate_subtopic_description(
+    request: DynamicDescriptionRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    Generate a dynamic, on-the-fly description for a subtopic.
+    
+    NOT stored in database - generated in real-time using Ollama.
+    Perfect for displaying in the subtopic side panel.
+    
+    Request:
+    {
+        "title": "Kinematics"
+    }
+    
+    Response:
+    {
+        "title": "Kinematics",
+        "description": "**Definition:**\nKinematics is the study of motion...",
+        "generated_at": "2026-04-10T10:30:00",
+        "success": true
+    }
+    """
+    
+    if not request.title or len(request.title.strip()) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Title cannot be empty"
+        )
+    
+    try:
+        # Generate description dynamically
+        description = generate_dynamic_description(request.title)
+        
+        return {
+            "title": request.title,
+            "description": description,
+            "generated_at": str(__import__('datetime').datetime.utcnow()),
+            "success": True,
+            "message": "Description generated successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating description: {str(e)}"
+        )
+
+
+@router.get("/generate-description/{subtopic_id}")
+def get_subtopic_description(
+    subtopic_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Get dynamic description for a specific subtopic by ID.
+    
+    Fetches the subtopic from database and generates description on-the-fly.
+    """
+    
+    # Get subtopic from database
+    subtopic = db.query(models.Subtopic).filter(
+        models.Subtopic.id == subtopic_id
+    ).first()
+    
+    if not subtopic:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Subtopic {subtopic_id} not found"
+        )
+    
+    try:
+        # Generate description dynamically
+        description = generate_dynamic_description(subtopic.title)
+        
+        return {
+            "subtopic_id": subtopic_id,
+            "title": subtopic.title,
+            "description": description,
+            "generated_at": str(__import__('datetime').datetime.utcnow()),
+            "success": True,
+            "message": "Description generated successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating description: {str(e)}"
         )

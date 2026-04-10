@@ -446,3 +446,74 @@ Tutor:
     except Exception as e:
         print(f"Error generating chat response: {str(e)}")
         return "I'm having trouble responding right now. Please try again."
+
+
+# --------------------------------------------------
+# 📖 DYNAMIC DESCRIPTION GENERATOR (For Subtopic Panel)
+# --------------------------------------------------
+
+def generate_dynamic_description(title: str) -> str:
+    """
+    Generate a dynamic, concise description for a subtopic on-the-fly.
+    Uses phi3 model for fast, lightweight generation.
+    
+    NOT stored in database - fetched dynamically when needed.
+    
+    Args:
+        title (str): Topic/Subtopic title (e.g., "Kinematics", "Mean & Median")
+    
+    Returns:
+        str: Generated description with:
+             - Definition
+             - Key concepts
+             - One simple example
+             - Structured and concise format
+    
+    Example:
+        >>> desc = generate_dynamic_description("Kinematics")
+        >>> print(desc)
+    """
+    
+    prompt = f"""Explain the topic "{title}" for NDA exam preparation in a clear, structured way.
+
+**Definition:**
+Provide a brief definition (1-2 sentences)
+
+**Key Concepts:**
+List 2-3 key concepts related to this topic
+
+**Simple Example:**
+Give one real-world or practical example
+
+**Important Points:**
+List 2-3 important points to remember
+
+Keep the entire response concise and well-structured. Use bullet points where appropriate."""
+
+    try:
+        response = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": "phi",  # Using phi (3B version) - lightweight and fast
+                "prompt": prompt,
+                "stream": False,
+                "temperature": 0.6  # Lower temperature for consistent, focused responses
+            },
+            timeout=60  # 60 second timeout
+        )
+        
+        data = response.json()
+        description = data.get("response", "").strip()
+        
+        if not description:
+            return f"Unable to generate description for {title}. Please try again."
+        
+        return description
+        
+    except requests.exceptions.Timeout:
+        return f"Generation timed out for {title}. Please try again."
+    except requests.exceptions.ConnectionError:
+        return "Cannot connect to Ollama. Please ensure Ollama is running at http://localhost:11434"
+    except Exception as e:
+        print(f"Error generating dynamic description for '{title}': {str(e)}")
+        return f"Error generating description for {title}: {str(e)}"

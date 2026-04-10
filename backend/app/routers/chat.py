@@ -3,12 +3,12 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.services.ai_services import generate_chat_response
-from app import crud, models
+from ..database import get_db
+from ..dependencies import get_current_user
+from ..services.ai_services import generate_chat_response
+from .. import crud, models
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
 
 # --------------------------------------------------
@@ -380,4 +380,55 @@ def end_session(
         raise HTTPException(
             status_code=500,
             detail=f"Error ending chat session: {str(e)}"
+        )
+
+
+@router.delete("/sessions/{session_id}")
+def delete_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Delete a chat session permanently.
+    
+    Removes the session and all associated messages.
+    """
+    print(f"DELETE request: session_id={session_id}, user_id={current_user.id}")
+    
+    # Verify session belongs to user
+    chat_session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id,
+        models.ChatSession.user_id == current_user.id
+    ).first()
+    
+    print(f"Found session: {chat_session}")
+    
+    if not chat_session:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Chat session {session_id} not found or unauthorized"
+        )
+    
+    try:
+        # Delete the session (cascade will delete messages)
+        db.delete(chat_session)
+        db.commit()
+        
+        print(f"Session {session_id} deleted successfully")
+        
+        return {
+            "session_id": session_id,
+            "status": "deleted",
+            "message": "Chat session deleted successfully"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Delete error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting chat session: {str(e)}"
         )

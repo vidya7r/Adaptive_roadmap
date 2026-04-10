@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app import models
-from app.services.ai_services import generate_explanation
+from .. import models
+from .ai_services import generate_explanation
 
 
 def generate_and_store_explanations(db: Session):
