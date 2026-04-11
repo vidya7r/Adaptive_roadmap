@@ -1,4 +1,76 @@
 # NDA Competitive Exam Preparation Platform - Complete Project Report
+## 🎯 Project Objective
+
+The objective of this project is to develop an intelligent and adaptive web-based platform for NDA exam preparation. The system aims to provide structured learning through a hierarchical model (Exam → Section → Topic → Subtopic) and enhance it using AI-driven explanations, dynamic resources, and real-time tutoring.
+
+The platform focuses on improving conceptual understanding, providing personalized learning insights, and offering an interactive experience through AI-based chat and analytics.
+
+This project bridges traditional exam preparation with modern AI-assisted learning.
+
+## 🏗️ System Architecture
+
+The system follows a multi-layer architecture:
+
+1. Frontend Layer:
+   - Built using React and Vite
+   - Handles UI, user interaction, and API communication
+
+2. Backend Layer:
+   - Built using FastAPI
+   - Manages business logic, APIs, authentication, and AI integration
+
+3. Database Layer:
+   - PostgreSQL database
+   - Stores user data, topics, progress, questions, and chat history
+
+4. AI Layer:
+   - Ollama (phi model) for generating explanations
+   - Mistral model for chatbot interaction
+
+5. Resource Layer:
+   - MCP Resource Server for PDFs and articles
+   - YouTube Data API for video resources
+
+   ## 🔄 System Workflow
+
+1. User logs into the platform
+2. Selects NDA exam
+3. Navigates through:
+   Exam → Module → Topic → Subtopic
+4. Opens subtopic side panel
+5. System dynamically loads:
+   - AI-generated description (phi model)
+   - YouTube videos
+   - PDFs (arXiv)
+   - Articles (Dev.to, Hackernoon, GeeksforGeeks)
+6. User interacts with AI tutor (mistral model)
+7. User practices questions
+8. Progress is tracked and stored
+9. Analytics dashboard provides insights and recommendations
+
+## 🌟 Unique Features
+
+- Local AI integration using Ollama (no external dependency)
+- MCP-based resource fetching system
+- Dynamic AI-generated explanations (no static storage)
+- Multi-source article aggregation
+- Subtopic-specific resource filtering
+- Real-time AI chatbot tutor
+- Professional UI with custom color palette
+
+## ⚠️ Limitations
+
+- Performance depends on local system (CPU/RAM)
+- AI responses may vary depending on model output
+- Requires Ollama to be running locally
+- YouTube API has usage limits
+- No offline mobile version available
+
+## 🚀 Future Enhancements
+- Voice-based AI tutor
+- Real NDA mock test simulation
+- Leaderboard and gamification
+
 
 ## 📋 Executive Summary
 
