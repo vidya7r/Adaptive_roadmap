@@ -114,21 +114,33 @@ def get_youtube_videos(
 
 
 @router.get("/pdf/{subtopic_id}")
-def get_pdf_resource(
+def get_pdf_resources(
     subtopic_id: int,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """
-    Generate Google Search URL for PDF resources
+    Fetch actual PDF resources from arXiv for a subtopic
     
     Returns:
     {
         "subtopic_id": 1,
         "subtopic_title": "Kinematics",
-        "pdf_url": "https://www.google.com/search?q=...",
-        "search_query": "kinematics nda notes pdf",
-        "type": "pdf"
+        "pdfs": [
+            {
+                "title": "...",
+                "url": "...",
+                "source": "arXiv",
+                "author_display": "...",
+                "published_date": "...",
+                "description": "...",
+                "type": "pdf",
+                "pages": "50+",
+                "file_size": "2.5 MB",
+                "rating": 4.5
+            }
+        ],
+        "total": 5
     }
     """
     try:
@@ -143,39 +155,52 @@ def get_pdf_resource(
                 detail=f"Subtopic {subtopic_id} not found"
             )
         
-        # Generate PDF search URL
-        pdf_data = resource_service.generate_pdf_search_url(subtopic.title)
+        # Fetch actual PDFs using MCP resource fetcher
+        pdfs = resource_service.fetch_pdfs(subtopic.title, max_results=5)
         
         return {
             "subtopic_id": subtopic_id,
             "subtopic_title": subtopic.title,
-            **pdf_data
+            "pdfs": pdfs,
+            "total": len(pdfs)
         }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error generating PDF URL: {str(e)}"
+            detail=f"Error fetching PDFs: {str(e)}"
         )
 
 
 @router.get("/article/{subtopic_id}")
-def get_article_resource(
+def get_article_resources(
     subtopic_id: int,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """
-    Generate Google Search URL for article/study materials
+    Fetch educational articles from multiple sources for a subtopic
     
     Returns:
     {
         "subtopic_id": 1,
         "subtopic_title": "Kinematics",
-        "article_url": "https://www.google.com/search?q=...",
-        "search_query": "kinematics nda study material",
-        "type": "article"
+        "articles": [
+            {
+                "title": "...",
+                "url": "...",
+                "source": "Dev.to",
+                "author_display": "...",
+                "published_date": "...",
+                "description": "...",
+                "type": "article",
+                "reading_time": "10 min read",
+                "category": "Tutorial",
+                "views": 1000
+            }
+        ],
+        "total": 5
     }
     """
     try:
@@ -190,20 +215,21 @@ def get_article_resource(
                 detail=f"Subtopic {subtopic_id} not found"
             )
         
-        # Generate article search URL
-        article_data = resource_service.generate_article_search_url(subtopic.title)
+        # Fetch actual articles using MCP resource fetcher
+        articles = resource_service.fetch_articles(subtopic.title, max_results=5)
         
         return {
             "subtopic_id": subtopic_id,
             "subtopic_title": subtopic.title,
-            **article_data
+            "articles": articles,
+            "total": len(articles)
         }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error generating article URL: {str(e)}"
+            detail=f"Error fetching articles: {str(e)}"
         )
 
 
@@ -221,8 +247,8 @@ def get_all_resources_for_subtopic(
         "subtopic_id": 1,
         "subtopic_title": "Kinematics",
         "videos": [...],
-        "pdf": {...},
-        "article": {...}
+        "pdfs": [...],
+        "articles": [...]
     }
     """
     try:

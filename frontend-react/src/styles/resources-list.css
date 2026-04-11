@@ -296,7 +296,188 @@
     font-size: 0.8rem;
   }
 }
-  font-style: italic;
+
+/* PDF List and Cards */
+.pdf-list,
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pdf-card,
+.article-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 14px;
+  transition: all 0.3s ease;
+}
+
+.pdf-card:hover,
+.article-card:hover {
+  box-shadow: 0 2px 8px rgba(11, 60, 93, 0.15);
+  border-color: #0B3C5D;
+  transform: translateY(-2px);
+}
+
+.pdf-header,
+.article-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+
+.pdf-icon,
+.article-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pdf-info,
+.article-info {
+  flex: 1;
+}
+
+.pdf-title,
+.article-title {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.pdf-source,
+.pdf-author,
+.article-source,
+.article-author {
+  margin: 2px 0;
+  font-size: 0.75rem;
+  color: #666666;
+}
+
+.pdf-meta,
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 0.75rem;
+  color: #666666;
+}
+
+.pdf-date,
+.pdf-pages,
+.pdf-size,
+.pdf-rating,
+.article-date,
+.article-time,
+.article-category,
+.article-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pdf-description,
+.article-description {
+  margin: 8px 0 12px 0;
+  font-size: 0.8rem;
+  color: #1F2933;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pdf-actions,
+.article-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pdf-button,
+.article-button {
+  padding: 6px 12px;
+  background: #0B3C5D;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 100px;
+}
+
+.pdf-download,
+.article-read {
+  flex: 2;
+}
+
+.article-save {
+  flex: 1;
+  background: #f0f0f0;
+  color: #1a1a1a;
+  border: 1px solid #e0e0e0;
+}
+
+.pdf-button:hover,
+.article-button:hover {
+  background: #0B3C5D;
+  transform: scale(1.02);
+}
+
+.article-save:hover {
+  background: #e8e8e8;
+}
+
+.pdf-button:active,
+.article-button:active {
+  transform: scale(0.98);
+}
+
+/* Mobile responsive for cards */
+@media (max-width: 600px) {
+  .pdf-card,
+  .article-card {
+    padding: 12px;
+  }
+
+  .pdf-header,
+  .article-header {
+    gap: 10px;
+  }
+
+  .pdf-icon,
+  .article-icon {
+    font-size: 1.8rem;
+  }
+
+  .pdf-title,
+  .article-title {
+    font-size: 0.85rem;
+  }
+
+  .pdf-actions,
+  .article-actions {
+    gap: 6px;
+  }
+
+  .pdf-button,
+  .article-button {
+    flex: 1;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    min-width: 80px;
+  }
 }
 
 .resources-error {

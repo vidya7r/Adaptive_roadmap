@@ -1,6 +1,6 @@
 import api from './api';
 
-const RESOURCES_API_BASE_URL = 'http://localhost:8001/api/resources';
+const RESOURCES_API_BASE_URL = '/api/resources';
 
 export const resourceService = {
   /**
@@ -64,7 +64,7 @@ export const resourceService = {
   },
 
   /**
-   * Get all resources (videos, PDF, articles) for a subtopic
+   * Get all resources (videos, PDFs, articles) for a subtopic
    * @param {number} subtopicId - The subtopic ID
    * @returns {Promise} All resources data
    */
