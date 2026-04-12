@@ -1,14 +1,7 @@
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load .env file from parent directory (backend/)
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(env_path)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth, roadmap
+from .routers import resources
 from .database import engine
 from . import models
 from .routers import analytics
@@ -17,7 +10,6 @@ from .routers import adaptive
 from .database import Base, engine
 from .routers import ai_routes
 from .routers import chat
-from .routers import resources
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,15 +25,11 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:5175",
-        "http://localhost:5176",
-        "http://localhost:5177",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
         "http://127.0.0.1:5175",
-        "http://127.0.0.1:5176",
-        "http://127.0.0.1:5177",
     ],
     allow_credentials=True,
     allow_methods=["*"],

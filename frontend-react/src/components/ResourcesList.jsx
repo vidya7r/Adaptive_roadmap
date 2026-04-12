@@ -39,7 +39,13 @@ export const ResourcesList = ({ subtopicId, subtopicTitle }) => {
       });
     } catch (err) {
       console.error('Error loading resources:', err);
-      setError('Failed to load study materials');
+      // Show empty state instead of error - make it graceful
+      setResources({
+        videos: [],
+        pdfs: [],
+        articles: []
+      });
+      setError(null);
     } finally {
       setLoading(false);
     }

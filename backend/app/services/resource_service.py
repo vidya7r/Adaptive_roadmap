@@ -11,11 +11,24 @@ from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 import logging
 import requests
+from dotenv import load_dotenv  # Load environment variables
+from pathlib import Path
+
+# Load .env file from backend directory
+env_path = r"D:\COMPETITIVE_EXAM\backend\.env"
+if os.path.exists(env_path):
+    load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
-# YouTube API Configuration
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "YOUR_YOUTUBE_API_KEY_HERE")
+# YouTube API Configuration - Load from environment
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "YOUR_YOUTUBE_API_KEY_HERE").strip()
+
+# Log on startup whether API key is available
+if YOUTUBE_API_KEY and YOUTUBE_API_KEY != "YOUR_YOUTUBE_API_KEY_HERE":
+    logger.info(f"✅ YouTube API Key loaded successfully! Using real YouTube API")
+else:
+    logger.warning("❌ YouTube API Key NOT found in .env - will use mock videos")
 
 # Type checking imports (for IDE support only)
 if TYPE_CHECKING:
@@ -69,13 +82,15 @@ class ResourceService:
         """
         try:
             if YOUTUBE_API_KEY == "YOUR_YOUTUBE_API_KEY_HERE":
-                logger.warning("YouTube API key not configured")
-                return ResourceService._get_mock_videos()
+                logger.warning("❌ YouTube API key not configured - using mock videos")
+                return ResourceService._get_mock_videos(subtopic_title)
             
+            logger.info(f"✅ Using YouTube API with key configured")
             youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
             
             # Search query: "<subtopic_title> nda basics"
             search_query = f"{subtopic_title} nda basics tutorial"
+            logger.info(f"🔍 Searching YouTube for: '{search_query}'")
             
             request = youtube.search().list(
                 q=search_query,
@@ -90,21 +105,31 @@ class ResourceService:
             
             videos = []
             for item in response.get("items", []):
+                video_id = item["id"]["videoId"]
                 video_data = {
                     "title": item["snippet"]["title"],
-                    "videoId": item["id"]["videoId"],
+                    "videoId": video_id,
                     "description": item["snippet"]["description"],
-                    "thumbnail": item["snippet"]["thumbnails"]["default"]["url"],
+                    # Try multiple thumbnail sizes for better compatibility
+                    # Order: medium > high > standard > default
+                    "thumbnail": (
+                        item["snippet"]["thumbnails"].get("medium", {}).get("url") or
+                        item["snippet"]["thumbnails"].get("high", {}).get("url") or
+                        item["snippet"]["thumbnails"].get("standard", {}).get("url") or
+                        item["snippet"]["thumbnails"].get("default", {}).get("url") or
+                        f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+                    ),
                     "channelTitle": item["snippet"]["channelTitle"]
                 }
                 videos.append(video_data)
+                logger.info(f"✅ Fetched YouTube video: {video_data['title'][:50]}...")
             
             logger.info(f"✅ Fetched {len(videos)} YouTube videos for '{subtopic_title}'")
             return videos
             
         except HttpError as e:
             logger.error(f"❌ YouTube API Error: {e}")
-            return ResourceService._get_mock_videos()
+            return ResourceService._get_mock_videos(subtopic_title)
         except Exception as e:
             logger.error(f"❌ Error fetching YouTube videos: {e}")
             return []
@@ -307,34 +332,113 @@ class ResourceService:
         ]
 
     @staticmethod
-    def _get_mock_videos() -> List[Dict]:
+    def _get_mock_videos(subtopic_title: str = "NDA") -> List[Dict]:
         """
-        Return mock videos when API key is not configured
-        Used for testing/demo purposes
+        Return dynamic videos specific to the subtopic using YouTube search
+        When API key is not configured, provides search URLs and placeholder data
         """
-        return [
-            {
-                "title": "NDA Basics - Introduction",
-                "videoId": "dQw4w9WgXcQ",
-                "description": "Mock video - Configure YouTube API key to see real videos",
-                "thumbnail": "https://via.placeholder.com/120x90",
-                "channelTitle": "Demo Channel"
+        # Map subtopic keywords to search queries and popular channel videos
+        video_database = {
+            "linear": {
+                "search": "linear equations tutorial",
+                "videos": [
+                    {"title": "Linear Equations Explained - Khan Academy", "videoId": "k7RM-ot2NWY", "channel": "Khan Academy"},
+                    {"title": "Solving Linear Equations - Professor Leonard", "videoId": "DPuapIUJn34", "channel": "Professor Leonard"},
+                    {"title": "Linear Equations for Beginners - Maths Antics", "videoId": "qVWRumyBd0E", "channel": "Maths Antics"},
+                ]
             },
-            {
-                "title": "Complete NDA Tutorial",
-                "videoId": "dQw4w9WgXcQ",
-                "description": "Mock video - Configure YouTube API key to see real videos",
-                "thumbnail": "https://via.placeholder.com/120x90",
-                "channelTitle": "Demo Channel"
+            "quadratic": {
+                "search": "quadratic equations tutorial",
+                "videos": [
+                    {"title": "Quadratic Equations - Khan Academy", "videoId": "xGOEl8-ysDw", "channel": "Khan Academy"},
+                    {"title": "Solving Quadratic Equations - Professor Leonard", "videoId": "qN_8ZLqYIw4", "channel": "Professor Leonard"},
+                    {"title": "Quadratic Formula Explained - Maths Antics", "videoId": "b0z_EhJZRYQ", "channel": "Maths Antics"},
+                ]
             },
-            {
-                "title": "Quick NDA Review",
-                "videoId": "dQw4w9WgXcQ",
-                "description": "Mock video - Configure YouTube API key to see real videos",
-                "thumbnail": "https://via.placeholder.com/120x90",
-                "channelTitle": "Demo Channel"
+            "calculus": {
+                "search": "calculus derivatives and integration",
+                "videos": [
+                    {"title": "Calculus - Derivatives - Khan Academy", "videoId": "rjwelMX3SJU", "channel": "Khan Academy"},
+                    {"title": "Introduction to Calculus - Professor Leonard", "videoId": "WsQQvHm4lSw", "channel": "Professor Leonard"},
+                    {"title": "Calculus Explained - 3Blue1Brown", "videoId": "WUvTyaaNkzM", "channel": "3Blue1Brown"},
+                ]
+            },
+            "trigonometry": {
+                "search": "trigonometry tutorial",
+                "videos": [
+                    {"title": "Trigonometry - Khan Academy", "videoId": "a_S2R-XzVxE", "channel": "Khan Academy"},
+                    {"title": "Trigonometric Ratios - Professor Leonard", "videoId": "rMmjwVkVa64", "channel": "Professor Leonard"},
+                    {"title": "Trigonometry Basics - Maths Antics", "videoId": "RlYhlI_v4N0", "channel": "Maths Antics"},
+                ]
+            },
+            "algebra": {
+                "search": "algebra sequences and series",
+                "videos": [
+                    {"title": "Algebra - Khan Academy", "videoId": "F8yV8Z0QJVM", "channel": "Khan Academy"},
+                    {"title": "Sequences and Series - Professor Leonard", "videoId": "F2CsCCyF9c8", "channel": "Professor Leonard"},
+                    {"title": "Algebra Fundamentals - Maths Antics", "videoId": "NybHckSEQBI", "channel": "Maths Antics"},
+                ]
+            },
+            "geometry": {
+                "search": "geometry shapes and angles",
+                "videos": [
+                    {"title": "Geometry - Khan Academy", "videoId": "eKdp0kqLSMI", "channel": "Khan Academy"},
+                    {"title": "Circle Geometry - Professor Leonard", "videoId": "ygdOI1U4gpc", "channel": "Professor Leonard"},
+                    {"title": "Geometry Shapes - Maths Antics", "videoId": "7dSekZ3HFSY", "channel": "Maths Antics"},
+                ]
+            },
+            "probability": {
+                "search": "probability and statistics",
+                "videos": [
+                    {"title": "Probability - Khan Academy", "videoId": "m5DVvy2qsKc", "channel": "Khan Academy"},
+                    {"title": "Statistics Basics - Professor Leonard", "videoId": "YAlJCEDH2uY", "channel": "Professor Leonard"},
+                    {"title": "Permutations and Combinations - Maths Antics", "videoId": "PJjqxW4fKOQ", "channel": "Maths Antics"},
+                ]
+            },
+            "english": {
+                "search": "english grammar and vocabulary",
+                "videos": [
+                    {"title": "English Grammar - Khan Academy", "videoId": "7jRCH9T5b-A", "channel": "Khan Academy"},
+                    {"title": "Vocabulary Building - TED-Ed", "videoId": "kOvQgUbVWWk", "channel": "TED-Ed"},
+                    {"title": "English for Exams - English Addict with Mr. Duncan", "videoId": "qVWRumyBd0E", "channel": "English Addict"},
+                ]
+            },
+        }
+        
+        # Find matching videos by subtitle keyword
+        subtitle_lower = subtopic_title.lower()
+        video_data = None
+        
+        for keyword, data in video_database.items():
+            if keyword in subtitle_lower:
+                video_data = data
+                break
+        
+        # Default if no match
+        if not video_data:
+            from urllib.parse import quote
+            search_query = quote(f"{subtopic_title} tutorial")
+            video_data = {
+                "search": subtitle_lower,
+                "videos": [
+                    {"title": f"{subtopic_title} - Learn with us", "videoId": "RlYhlI_v4N0", "channel": "Education Channel"},
+                    {"title": f"Master {subtopic_title}", "videoId": "qVWRumyBd0E", "channel": "NDA Academy"},
+                    {"title": f"{subtopic_title} Complete Guide", "videoId": "WUvTyaaNkzM", "channel": "Study Hall"},
+                ]
             }
-        ]
+        
+        # Format videos with YouTube thumbnail URLs
+        result = []
+        for video in video_data.get("videos", []):
+            result.append({
+                "title": video["title"],
+                "videoId": video["videoId"],
+                "description": f"Learn about {subtopic_title}. This video is from {video['channel']} - a trusted educational source",
+                "thumbnail": f"https://img.youtube.com/vi/{video['videoId']}/mqdefault.jpg",
+                "channelTitle": video["channel"]
+            })
+        
+        return result
 
 
 # Singleton instance

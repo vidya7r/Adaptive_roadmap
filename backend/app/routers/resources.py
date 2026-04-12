@@ -62,8 +62,7 @@ class ResourceResponse(BaseModel):
 @router.get("/youtube/{subtopic_id}")
 def get_youtube_videos(
     subtopic_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Fetch YouTube videos dynamically for a subtopic
@@ -116,8 +115,7 @@ def get_youtube_videos(
 @router.get("/pdf/{subtopic_id}")
 def get_pdf_resources(
     subtopic_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Fetch actual PDF resources from arXiv for a subtopic
@@ -176,8 +174,7 @@ def get_pdf_resources(
 @router.get("/article/{subtopic_id}")
 def get_article_resources(
     subtopic_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Fetch educational articles from multiple sources for a subtopic
@@ -236,8 +233,7 @@ def get_article_resources(
 @router.get("/all/{subtopic_id}")
 def get_all_resources_for_subtopic(
     subtopic_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Get all dynamic resources for a subtopic (videos, PDFs, articles)
